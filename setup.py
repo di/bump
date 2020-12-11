@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="bump",
-    version="1.1.1",
+    version="1.2.0",
     description="Bumps package version numbers",
     long_description=open("README.rst").read(),
     license="MIT",
@@ -17,6 +17,8 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
     keywords="bump increment package version",
     zip_safe=False,

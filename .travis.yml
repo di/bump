@@ -9,6 +9,10 @@ matrix:
       script:
         - black --check .
         - python setup.py check -r -s
+    - python: 3.9
+      dist: xenial
+    - python: 3.8
+      dist: xenial
     - python: 3.7
       dist: xenial
     - python: 3.6
