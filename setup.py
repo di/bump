@@ -22,7 +22,7 @@ setup(
     zip_safe=False,
     py_modules=["bump"],
     install_requires=[
-        "click>=6,<7",
+        "click>=6,<8",
         "configparser ; python_version<'3'",
         "first",
         "packaging>=17.1",
