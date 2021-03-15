@@ -64,8 +64,11 @@ class SemVer(object):
     def bump(self, major=False, minor=False, patch=False, pre=None, local=None):
         if major:
             self.major += 1
+            self.minor = 0
+            self.patch = 0
         if minor:
             self.minor += 1
+            self.patch = 0
         if patch:
             self.patch += 1
         if pre:
@@ -111,7 +114,7 @@ def main(input, output, major, minor, patch, pre, local, canonicalize):
 
     major = major or config.getboolean("bump", "major", fallback=False)
     minor = minor or config.getboolean("bump", "minor", fallback=False)
-    patch = patch or config.getboolean("bump", "patch", fallback=True)
+    patch = patch or config.getboolean("bump", "patch", fallback=False)
     input = input or click.File("rb")(config.get("bump", "input", fallback="setup.py"))
     output = output or click.File("wb")(input.name)
     canonicalize = canonicalize or config.get("bump", "canonicalize", fallback=False)
