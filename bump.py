@@ -96,13 +96,28 @@ def find_version(input_string):
 
 @click.command()
 @click.option(
-    "--major", "-M", "major", flag_value=True, default=None, help="Bump major number. Ex.: 1.2.3 -> 2.2.3"
+    "--major",
+    "-M",
+    "major",
+    flag_value=True,
+    default=None,
+    help="Bump major number. Ex.: 1.2.3 -> 2.2.3",
 )
 @click.option(
-    "--minor", "-m", "minor", flag_value=True, default=None, help="Bump minor number. Ex.: 1.2.3 -> 1.3.3"
+    "--minor",
+    "-m",
+    "minor",
+    flag_value=True,
+    default=None,
+    help="Bump minor number. Ex.: 1.2.3 -> 1.3.3",
 )
 @click.option(
-    "--patch", "-p", "patch", flag_value=True, default=None, help="Bump patch number. Ex.: 1.2.3 -> 1.2.4"
+    "--patch",
+    "-p",
+    "patch",
+    flag_value=True,
+    default=None,
+    help="Bump patch number. Ex.: 1.2.3 -> 1.2.4",
 )
 @click.option(
     "--reset",
