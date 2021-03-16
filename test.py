@@ -47,20 +47,24 @@ def test_bump_major():
     version.bump(major=True)
     check_version(version, 2, 2, 3, None, None)
 
+
 def test_bump_major_with_clear():
     version = SemVer(major=1, minor=2, patch=3)
     version.bump(major=True, clear=True)
     check_version(version, 2, 0, 0, None, None)
+
 
 def test_bump_minor():
     version = SemVer(major=1, minor=2, patch=3)
     version.bump(minor=True)
     check_version(version, 1, 3, 3, None, None)
 
+
 def test_bump_minor_with_clear():
     version = SemVer(major=1, minor=2, patch=3)
     version.bump(minor=True, clear=True)
     check_version(version, 1, 3, 0, None, None)
+
 
 def test_bump_patch():
     version = SemVer(major=1, minor=2, patch=3)

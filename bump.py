@@ -61,7 +61,9 @@ class SemVer(object):
             major=int(major), minor=int(minor), patch=int(patch), pre=pre, local=local
         )
 
-    def bump(self, major=False, minor=False, patch=False, pre=None, local=None, clear=False):
+    def bump(
+        self, major=False, minor=False, patch=False, pre=None, local=None, clear=False
+    ):
         if major:
             self.major += 1
             if clear:
@@ -103,8 +105,12 @@ def find_version(input_string):
     "--patch", "-p", "patch", flag_value=True, default=None, help="Bump patch number"
 )
 @click.option(
-    "--clear", "-c", "clear", flag_value=True, default=None,
-    help="Zero subversions. Ex.: Major bump from 1.8.3 will be 2.0.0 instead of 2.8.3"
+    "--clear",
+    "-c",
+    "clear",
+    flag_value=True,
+    default=None,
+    help="Zero subversions. Ex.: Major bump from 1.8.3 will be 2.0.0 instead of 2.8.3",
 )
 @click.option("--pre", help="Set the pre-release identifier")
 @click.option("--local", help="Set the local version segment")
