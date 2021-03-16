@@ -45,14 +45,14 @@ the pre-release identifier or local version segment::
     -M, --major     Bump major number. Ex.: 1.2.3 -> 2.2.3
     -m, --minor     Bump minor number. Ex.: 1.2.3 -> 1.3.3
     -p, --patch     Bump patch number. Ex.: 1.2.3 -> 1.2.4
-    -c, --clear     Zero subversions. Ex.: Major bump from 1.8.3 will be 2.0.0
-                    instead of 2.8.3
+    -r, --reset     Zero subversions. Ex.: Major bump from 1.2.3 will be 2.0.0
+                    instead of 2..3
     --pre TEXT      Set the pre-release identifier
     --local TEXT    Set the local version segment
     --canonicalize  Canonicalize the new version
     --help          Show this message and exit.
 
-The `--clear` option should be used alongside with minor or major bump.
+The `--reset` option should be used alongside with minor or major bump.
 
 You can configure these options by setting them in a ``.bump`` or ``setup.cfg``
 configuration file as well, so you don't have to specify them every time::
@@ -62,4 +62,4 @@ configuration file as well, so you don't have to specify them every time::
   input = some_directory/__file__.py
   minor = true
   patch = false
-  clear = true
+  reset = true
