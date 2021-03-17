@@ -45,7 +45,7 @@ the pre-release identifier or local version segment::
     -M, --major     Bump major number. Ex.: 1.2.3 -> 2.2.3
     -m, --minor     Bump minor number. Ex.: 1.2.3 -> 1.3.3
     -p, --patch     Bump patch number. Ex.: 1.2.3 -> 1.2.4
-    -r, --reset     Zero subversions. Ex.: Major bump from 1.2.3 will be 2.0.0
+    -r, --reset     Reset subversions. Ex.: Major bump from 1.2.3 will be 2.0.0
                     instead of 2.2.3
     --pre TEXT      Set the pre-release identifier
     --local TEXT    Set the local version segment
