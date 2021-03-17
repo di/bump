@@ -74,7 +74,7 @@ def test_bump_patch():
 
 def test_bump_patch_with_reset():
     version = SemVer(major=1, minor=2, patch=3)
-    version.bump(patch=True)
+    version.bump(patch=True, reset=True)
     check_version(version, 1, 2, 4, None, None)
 
 
