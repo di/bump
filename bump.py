@@ -12,7 +12,7 @@ import click
 from first import first
 from packaging.utils import canonicalize_version
 
-pattern = re.compile(r"((?:__)?version(?:__)? ?= ?[\"'])(.+?)([\"'])")
+version_pattern = re.compile(r"((?:__)?version(?:__)? ?= ?[\"'])(.+?)([\"'])")
 name_pattern = re.compile(r"((?:__)?name(?:__)? ?= ?[\"'])(.+?)([\"'])")
 
 
@@ -64,9 +64,7 @@ class SemVer(object):
             major=int(major), minor=int(minor), patch=int(patch), pre=pre, local=local
         )
 
-    def bump(
-            self, major=False, minor=False, patch=False, pre=None, local=None, reset=False
-    ):
+    def bump(self, major=False, minor=False, patch=False, pre=None, local=None, reset=False):
         if major:
             self.major += 1
             if reset:
@@ -90,8 +88,12 @@ class NoVersionFound(Exception):
     pass
 
 
+class NoNameFound(Exception):
+    pass
+
+
 def find_version(input_string):
-    match = first(pattern.findall(input_string))
+    match = first(version_pattern.findall(input_string))
     if match is None:
         raise NoVersionFound
     return match[1]
@@ -100,7 +102,7 @@ def find_version(input_string):
 def find_name(input_string):
     match = first(name_pattern.findall(input_string))
     if match is None:
-        raise NoVersionFound
+        raise NoNameFound
     return match[1]
 
 
@@ -178,7 +180,7 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize, py
     version_string = str(version)
     if canonicalize:
         version_string = canonicalize_version(version_string)
-    new = pattern.sub("\g<1>{}\g<3>".format(version_string), contents)
+    new = version_pattern.sub("\g<1>{}\g<3>".format(version_string), contents)
     output.write(new.encode())
     click.echo(version_string)
 
