@@ -1,6 +1,8 @@
 import re
 import sys
 
+import requests
+
 try:
     import configparser
 except ImportError:  # 2.7
@@ -11,6 +13,7 @@ from first import first
 from packaging.utils import canonicalize_version
 
 pattern = re.compile(r"((?:__)?version(?:__)? ?= ?[\"'])(.+?)([\"'])")
+name_pattern = re.compile(r"((?:__)?name(?:__)? ?= ?[\"'])(.+?)([\"'])")
 
 
 class SemVer(object):
@@ -62,7 +65,7 @@ class SemVer(object):
         )
 
     def bump(
-        self, major=False, minor=False, patch=False, pre=None, local=None, reset=False
+            self, major=False, minor=False, patch=False, pre=None, local=None, reset=False
     ):
         if major:
             self.major += 1
@@ -92,6 +95,20 @@ def find_version(input_string):
     if match is None:
         raise NoVersionFound
     return match[1]
+
+
+def find_name(input_string):
+    match = first(name_pattern.findall(input_string))
+    if match is None:
+        raise NoVersionFound
+    return match[1]
+
+
+def get_latest_version(name):
+    response = requests.get(
+        "https://pypi.org/pypi/{}/json".format(name)
+    ).json()
+    return response["info"]["version"]
 
 
 @click.command()
@@ -132,10 +149,10 @@ def find_version(input_string):
 @click.option(
     "--canonicalize", flag_value=True, default=None, help="Canonicalize the new version"
 )
+@click.option("--pypi", flag_value=True, default=None, help="Get latest version from pypi.org")
 @click.argument("input", type=click.File("rb"), default=None, required=False)
 @click.argument("output", type=click.File("wb"), default=None, required=False)
-def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
-
+def main(input, output, major, minor, patch, reset, pre, local, canonicalize, pypi):
     config = configparser.RawConfigParser()
     config.read([".bump", "setup.cfg"])
 
@@ -150,6 +167,8 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
     contents = input.read().decode("utf-8")
     try:
         version_string = find_version(contents)
+        if pypi:
+            version_string = get_latest_version(find_name(contents))
     except NoVersionFound:
         click.echo("No version found in ./{}.".format(input.name))
         sys.exit(1)

@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="bump",
-    version="1.3.0",
+    version="1.3.1",
     description="Bumps package version numbers",
     long_description=open("README.rst").read(),
     license="MIT",
@@ -28,6 +28,7 @@ setup(
         "configparser ; python_version<'3'",
         "first",
         "packaging>=17.1",
+        "requests"
     ],
     entry_points={"console_scripts": ["bump = bump:main"]},
 )
