@@ -28,7 +28,7 @@ setup(
         "configparser ; python_version<'3'",
         "first",
         "packaging>=17.1",
-        "requests"
+        "requests",
     ],
     entry_points={"console_scripts": ["bump = bump:main"]},
 )

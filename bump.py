@@ -64,7 +64,9 @@ class SemVer(object):
             major=int(major), minor=int(minor), patch=int(patch), pre=pre, local=local
         )
 
-    def bump(self, major=False, minor=False, patch=False, pre=None, local=None, reset=False):
+    def bump(
+        self, major=False, minor=False, patch=False, pre=None, local=None, reset=False
+    ):
         if major:
             self.major += 1
             if reset:
@@ -107,9 +109,7 @@ def find_name(input_string):
 
 
 def get_latest_version(name):
-    response = requests.get(
-        "https://pypi.org/pypi/{}/json".format(name)
-    ).json()
+    response = requests.get("https://pypi.org/pypi/{}/json".format(name)).json()
     return response["info"]["version"]
 
 
@@ -151,7 +151,9 @@ def get_latest_version(name):
 @click.option(
     "--canonicalize", flag_value=True, default=None, help="Canonicalize the new version"
 )
-@click.option("--pypi", flag_value=True, default=None, help="Get latest version from pypi.org")
+@click.option(
+    "--pypi", flag_value=True, default=None, help="Get latest version from pypi.org"
+)
 @click.argument("input", type=click.File("rb"), default=None, required=False)
 @click.argument("output", type=click.File("wb"), default=None, required=False)
 def main(input, output, major, minor, patch, reset, pre, local, canonicalize, pypi):
