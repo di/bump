@@ -50,6 +50,7 @@ the pre-release identifier or local version segment::
     --pre TEXT      Set the pre-release identifier
     --local TEXT    Set the local version segment
     --canonicalize  Canonicalize the new version
+    --pypi          Get latest information about version from pypi.org
     --help          Show this message and exit.
 
 The `--reset` option should be used alongside with minor or major bump.
