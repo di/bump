@@ -113,6 +113,18 @@ def get_latest_version(name):
     return response["info"]["version"]
 
 
+def compare_version(local_version, pypi_version):
+    from packaging import version
+
+    if local_version == pypi_version:
+        return local_version, False
+    return (
+        (local_version, True)
+        if version.parse(local_version) > version.parse(pypi_version)
+        else (pypi_version, False)
+    )
+
+
 @click.command()
 @click.option(
     "--major",
@@ -169,10 +181,22 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize, py
     canonicalize = canonicalize or config.get("bump", "canonicalize", fallback=False)
 
     contents = input.read().decode("utf-8")
+    lock = False
     try:
         version_string = find_version(contents)
         if pypi:
-            version_string = get_latest_version(find_name(contents))
+            pypi_version = get_latest_version(find_name(contents))
+            version_string, lock = compare_version(
+                version_string, get_latest_version(find_name(contents))
+            )
+            if lock:
+                click.echo(
+                    "Local version is higher: {} > {}.\nLooks like bump was done manually.".format(
+                        version_string, pypi_version
+                    )
+                )
+                sys.exit(0)
+
     except NoVersionFound:
         click.echo("No version found in ./{}.".format(input.name))
         sys.exit(1)
