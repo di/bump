@@ -2,3 +2,6 @@
 *.egg-info
 build/
 dist/
+venv
+bump.egg-info
+dist
