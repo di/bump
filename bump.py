@@ -1,10 +1,6 @@
+import configparser
 import re
 import sys
-
-try:
-    import configparser
-except ImportError:  # 2.7
-    import ConfigParser as configparser
 
 import click
 from first import first
