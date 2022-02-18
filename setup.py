@@ -20,7 +20,7 @@ setup(
     zip_safe=False,
     py_modules=["bump"],
     install_requires=[
-        "click>=8",
+        "click>=6,<9",
         "first",
         "packaging>=17.1",
     ],
