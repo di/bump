@@ -1,5 +1,9 @@
-name: Test
-on: [push]
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 jobs:
   build:
 
