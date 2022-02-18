@@ -29,5 +29,13 @@ setup(
         "first",
         "packaging>=17.1",
     ],
+    extras_require={
+        "dev": [
+            "pytest",
+            "black",
+            "build",
+            "twine",
+        ]
+    },
     entry_points={"console_scripts": ["bump = bump:main"]},
 )
