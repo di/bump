@@ -159,7 +159,7 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
     version_string = str(version)
     if canonicalize:
         version_string = canonicalize_version(version_string)
-    new = pattern.sub("\g<1>{}\g<3>".format(version_string), contents)
+    new = pattern.sub(r"\g<1>{}\g<3>".format(version_string), contents)
     output.write(new.encode())
     click.echo(version_string)
 
