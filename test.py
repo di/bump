@@ -1,7 +1,9 @@
+from pathlib import Path
+
 import pytest
 from click.testing import CliRunner
 
-from bump import SemVer, find_version, main
+from bump import Config, SemVer, find_version, main
 
 
 def check_version(version, major, minor, patch, pre, local):
@@ -123,3 +125,64 @@ def test_cli():
 )
 def test_find_version(line, expected):
     assert find_version(line) == expected
+
+
+def test_config_toml(tmp_path, monkeypatch):
+    config = """
+    [tool.bump]
+    major = true
+    minor = true
+    patch = true
+    reset = true
+    input = "foobar.py"
+    canonicalize = true
+    """
+
+    file = tmp_path / "pyproject.toml"
+    file.write_text(config)
+
+    monkeypatch.chdir(tmp_path)
+    assert (Path.cwd() / "pyproject.toml").is_file()
+
+    config = Config()
+    assert config.get("major", coercer=bool, default=False)
+    assert config.get("minor", coercer=bool, default=False)
+    assert config.get("patch", coercer=bool, default=False)
+    assert config.get("reset", coercer=bool, default=False)
+    assert config.get("input", default="setup.py") == "foobar.py"
+    assert config.get("canonicalize")
+
+    # defaults also work
+    assert config.get("nosuchkey") is None
+    assert config.get("nosuchkey", default="default") == "default"
+
+
+def test_config_ini(tmp_path, monkeypatch):
+    config = """
+    [bump]
+    major = yes
+    minor = true
+    patch = 1
+    reset = yes
+    input = foobar.py
+    canonicalize = yes
+    """
+
+    file = tmp_path / ".bump"
+    file.write_text(config)
+
+    monkeypatch.chdir(tmp_path)
+    assert (Path.cwd() / ".bump").is_file()
+
+    config = Config()
+    assert config.get("major", coercer=bool, default=False)
+    assert config.get("minor", coercer=bool, default=False)
+    assert config.get("patch", coercer=bool, default=False)
+    assert config.get("reset", coercer=bool, default=False)
+    assert config.get("input") == "foobar.py"
+    assert config.get("canonicalize")
+
+    # defaults also work
+    assert config.get("nosuchkey") is None
+    assert config.get("nosuchkey", default="default") == "default"
+    assert config.get("nosuchbool", coercer=bool, default=True) is True

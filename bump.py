@@ -18,10 +18,12 @@ class Config:
 
         self.toml_config = {}
         if os.path.exists("pyproject.toml"):
-            self.toml_config = toml.load(["pyproject.toml"]).get("tool.bump", {})
+            self.toml_config = (
+                toml.load("pyproject.toml").get("tool", {}).get("bump", {})
+            )
 
     def get(self, key, coercer=str, default=None):
-        candidate = self.toml_config.get(key, default)
+        candidate = self.toml_config.get(key)
         if candidate is not None:
             # No coercion needed for TOML, since values are strongly typed.
             return candidate
