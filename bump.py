@@ -1,12 +1,37 @@
 import configparser
+import os
 import re
 import sys
 
 import click
+import toml
 from first import first
 from packaging.utils import canonicalize_version
 
 pattern = re.compile(r"((?:__)?version(?:__)? ?= ?[\"'])(.+?)([\"'])")
+
+
+class Config:
+    def __init__(self):
+        self.ini_config = configparser.RawConfigParser()
+        self.ini_config.read([".bump", "setup.cfg"])
+
+        self.toml_config = {}
+        if os.path.exists("pyproject.toml"):
+            self.toml_config = toml.load(["pyproject.toml"]).get("tool.bump", {})
+
+    def get(self, key, coercer=str, default=None):
+        candidate = self.toml_config.get(key, default)
+        if candidate is not None:
+            # No coercion needed for TOML, since values are strongly typed.
+            return candidate
+
+        if coercer is str:
+            return self.ini_config.get("bump", key, fallback=default)
+        elif coercer is bool:
+            return self.ini_config.getboolean("bump", key, fallback=default)
+        else:
+            raise ValueError(f"invalid coercer: {coercer}")
 
 
 class SemVer(object):
@@ -132,16 +157,17 @@ def find_version(input_string):
 @click.argument("output", type=click.File("wb"), default=None, required=False)
 def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
 
-    config = configparser.RawConfigParser()
-    config.read([".bump", "setup.cfg"])
+    config = Config()
 
-    major = major or config.getboolean("bump", "major", fallback=False)
-    minor = minor or config.getboolean("bump", "minor", fallback=False)
-    patch = patch or config.getboolean("bump", "patch", fallback=False)
-    reset = reset or config.getboolean("bump", "reset", fallback=False)
-    input = input or click.File("rb")(config.get("bump", "input", fallback="setup.py"))
+    major = major or config.get("major", coercer=bool, default=False)
+    minor = minor or config.get("minor", coercer=bool, default=False)
+    patch = patch or config.get("patch", coercer=bool, default=False)
+    reset = reset or config.get("reset", coercer=bool, default=False)
+    input = input or click.File("rb")(config.get("input", default="setup.py"))
     output = output or click.File("wb")(input.name)
-    canonicalize = canonicalize or config.get("bump", "canonicalize", fallback=False)
+    canonicalize = canonicalize or config.get(
+        "canonicalize", coercer=bool, default=False
+    )
 
     contents = input.read().decode("utf-8")
     try:
