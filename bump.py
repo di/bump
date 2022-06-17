@@ -37,10 +37,11 @@ class Config:
 
 
 class SemVer(object):
-    def __init__(self, major=0, minor=0, patch=0, pre=None, local=None):
+    def __init__(self, major=0, minor=0, patch=0, final=None, pre=None, local=None):
         self.major = major
         self.minor = minor
         self.patch = patch
+        self.final = final
         self.pre = pre
         self.local = local
 
@@ -61,13 +62,16 @@ class SemVer(object):
     @classmethod
     def parse(cls, version):
         major = minor = patch = 0
+        final = True
         local = pre = None
         local_split = version.split("+")
         if len(local_split) > 1:
             version, local = local_split
+            final = False
         pre_split = version.split("-", 1)
         if len(pre_split) > 1:
             version, pre = pre_split
+            final = False
         major_split = version.split(".", 1)
         if len(major_split) > 1:
             major, version = major_split
@@ -81,11 +85,11 @@ class SemVer(object):
         else:
             major = version
         return cls(
-            major=int(major), minor=int(minor), patch=int(patch), pre=pre, local=local
+            major=int(major), minor=int(minor), patch=int(patch), final=final, pre=pre, local=local
         )
 
     def bump(
-        self, major=False, minor=False, patch=False, pre=None, local=None, reset=False
+            self, major=False, minor=False, patch=False, final=None, pre=None, local=None, reset=False
     ):
         if major:
             self.major += 1
@@ -98,11 +102,15 @@ class SemVer(object):
                 self.patch = 0
         if patch:
             self.patch += 1
-        if pre:
-            self.pre = pre
-        if local:
-            self.local = local
-        if not (major or minor or patch or pre or local):
+        if final:
+            self.pre = None
+            self.local = None
+        else:
+            if pre:
+                self.pre = pre
+            if local:
+                self.local = local
+        if not final and not (major or minor or patch or pre or local):
             self.patch += 1
 
 
@@ -150,6 +158,14 @@ def find_version(input_string):
     default=None,
     help="Reset subversions. Ex.: Major bump from 1.2.3 will be 2.0.0 instead of 2.2.3",
 )
+@click.option(
+    "--final",
+    "-f",
+    "final",
+    flag_value=True,
+    default=None,
+    help="Unset both the pre-release identifier and local version segment"
+)
 @click.option("--pre", help="Set the pre-release identifier")
 @click.option("--local", help="Set the local version segment")
 @click.option(
@@ -157,8 +173,7 @@ def find_version(input_string):
 )
 @click.argument("input", type=click.File("rb"), default=None, required=False)
 @click.argument("output", type=click.File("wb"), default=None, required=False)
-def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
-
+def main(input, output, major, minor, patch, reset, final, pre, local, canonicalize):
     config = Config()
 
     major = major or config.get("major", coercer=bool, default=False)
@@ -167,6 +182,9 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
     reset = reset or config.get("reset", coercer=bool, default=False)
     input = input or click.File("rb")(config.get("input", default="setup.py"))
     output = output or click.File("wb")(input.name)
+    final = final or config.get(
+        "final", coercer=bool, default=False
+    )
     canonicalize = canonicalize or config.get(
         "canonicalize", coercer=bool, default=False
     )
@@ -179,7 +197,7 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
         sys.exit(1)
 
     version = SemVer.parse(version_string)
-    version.bump(major, minor, patch, pre, local, reset)
+    version.bump(major, minor, patch, final, pre, local, reset)
     version_string = str(version)
     if canonicalize:
         version_string = canonicalize_version(version_string)
