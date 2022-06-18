@@ -85,11 +85,23 @@ class SemVer(object):
         else:
             major = version
         return cls(
-            major=int(major), minor=int(minor), patch=int(patch), final=final, pre=pre, local=local
+            major=int(major),
+            minor=int(minor),
+            patch=int(patch),
+            final=final,
+            pre=pre,
+            local=local,
         )
 
     def bump(
-            self, major=False, minor=False, patch=False, final=None, pre=None, local=None, reset=False
+        self,
+        major=False,
+        minor=False,
+        patch=False,
+        final=None,
+        pre=None,
+        local=None,
+        reset=False,
     ):
         self._bump_major_minor_patch(major, minor, patch, reset)
         self._bump_patch_fallback(major, minor, patch, final, pre, local)
@@ -173,7 +185,7 @@ def find_version(input_string):
     "final",
     flag_value=True,
     default=None,
-    help="Unset both the pre-release identifier and local version segment"
+    help="Unset both the pre-release identifier and local version segment",
 )
 @click.option("--pre", help="Set the pre-release identifier")
 @click.option("--local", help="Set the local version segment")
@@ -191,9 +203,7 @@ def main(input, output, major, minor, patch, reset, final, pre, local, canonical
     reset = reset or config.get("reset", coercer=bool, default=False)
     input = input or click.File("rb")(config.get("input", default="setup.py"))
     output = output or click.File("wb")(input.name)
-    final = final or config.get(
-        "final", coercer=bool, default=False
-    )
+    final = final or config.get("final", coercer=bool, default=False)
     canonicalize = canonicalize or config.get(
         "canonicalize", coercer=bool, default=False
     )
