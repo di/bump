@@ -47,6 +47,8 @@ the pre-release identifier or local version segment::
     -p, --patch     Bump patch number. Ex.: 1.2.3 -> 1.2.4
     -r, --reset     Reset subversions. Ex.: Major bump from 1.2.3 will be 2.0.0
                     instead of 2.2.3
+    -f, --final     Unset both the pre-release identifier and local
+                    version segment. Ex.: 1.2.3-pre+local -> 1.2.3
     --pre TEXT      Set the pre-release identifier
     --local TEXT    Set the local version segment
     --canonicalize  Canonicalize the new version
@@ -63,3 +65,4 @@ configuration file as well, so you don't have to specify them every time::
   minor = true
   patch = false
   reset = true
+  final = true

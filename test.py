@@ -104,6 +104,60 @@ def test_bump_no_args_retains_local():
     check_version(version, 1, 0, 1, None, "local")
 
 
+def test_bump_final_removes_pre_and_does_not_bump_patch_by_default():
+    version = SemVer(major=1, pre="pre")
+    version.bump(final=True)
+    check_version(version, 1, 0, 0, None, None)
+
+
+def test_bump_final_removes_local_and_does_not_bump_patch_by_default():
+    version = SemVer(major=1, local="local")
+    version.bump(final=True)
+    check_version(version, 1, 0, 0, None, None)
+
+
+def test_bump_final_dominates_over_pre():
+    version = SemVer(major=1)
+    version.bump(final=True, pre="pre")
+    check_version(version, 1, 0, 0, None, None)
+
+
+def test_bump_final_dominates_over_local():
+    version = SemVer(major=1)
+    version.bump(final=True, local="local")
+    check_version(version, 1, 0, 0, None, None)
+
+
+def test_bump_final_may_bump_major_explicitly():
+    version = SemVer(major=1)
+    version.bump(major=True, final=True)
+    check_version(version, 2, 0, 0, None, None)
+
+
+def test_bump_final_may_bump_minor_explicitly():
+    version = SemVer(major=1)
+    version.bump(minor=True, final=True)
+    check_version(version, 1, 1, 0, None, None)
+
+
+def test_bump_final_may_bump_patch_explicitly():
+    version = SemVer(major=1)
+    version.bump(patch=True, final=True)
+    check_version(version, 1, 0, 1, None, None)
+
+
+def test_bump_major_final_with_reset():
+    version = SemVer(major=1, minor=2, patch=3, pre="pre", local="local")
+    version.bump(major=True, reset=True, final=True)
+    check_version(version, 2, 0, 0, None, None)
+
+
+def test_bump_minor_final_with_reset():
+    version = SemVer(major=1, minor=2, patch=3, pre="pre", local="local")
+    version.bump(minor=True, reset=True, final=True)
+    check_version(version, 1, 3, 0, None, None)
+
+
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(main)
@@ -136,6 +190,7 @@ def test_config_toml(tmp_path, monkeypatch):
     reset = true
     input = "foobar.py"
     canonicalize = true
+    final = true
     """
 
     file = tmp_path / "pyproject.toml"
@@ -151,6 +206,7 @@ def test_config_toml(tmp_path, monkeypatch):
     assert config.get("reset", coercer=bool, default=False)
     assert config.get("input", default="setup.py") == "foobar.py"
     assert config.get("canonicalize")
+    assert config.get("final")
 
     # defaults also work
     assert config.get("nosuchkey") is None
@@ -166,6 +222,7 @@ def test_config_ini(tmp_path, monkeypatch):
     reset = yes
     input = foobar.py
     canonicalize = yes
+    final = yes
     """
 
     file = tmp_path / ".bump"
@@ -181,6 +238,7 @@ def test_config_ini(tmp_path, monkeypatch):
     assert config.get("reset", coercer=bool, default=False)
     assert config.get("input") == "foobar.py"
     assert config.get("canonicalize")
+    assert config.get("final")
 
     # defaults also work
     assert config.get("nosuchkey") is None
