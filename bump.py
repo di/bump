@@ -91,6 +91,11 @@ class SemVer(object):
     def bump(
             self, major=False, minor=False, patch=False, final=None, pre=None, local=None, reset=False
     ):
+        self._bump_major_minor_patch(major, minor, patch, reset)
+        self._bump_patch_fallback(major, minor, patch, final, pre, local)
+        self._bump_additional_identifiers(final, pre, local)
+
+    def _bump_major_minor_patch(self, major, minor, patch, reset):
         if major:
             self.major += 1
             if reset:
@@ -102,6 +107,12 @@ class SemVer(object):
                 self.patch = 0
         if patch:
             self.patch += 1
+
+    def _bump_patch_fallback(self, major, minor, patch, final, pre, local):
+        if not (major or minor or patch or final or pre or local):
+            self.patch += 1
+
+    def _bump_additional_identifiers(self, final, pre, local):
         if final:
             self.pre = None
             self.local = None
@@ -110,8 +121,6 @@ class SemVer(object):
                 self.pre = pre
             if local:
                 self.local = local
-        if not final and not (major or minor or patch or pre or local):
-            self.patch += 1
 
 
 class NoVersionFound(Exception):
