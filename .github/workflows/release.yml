@@ -8,6 +8,9 @@ jobs:
   pypi:
     name: upload release to PyPI
     runs-on: ubuntu-latest
+    permissions:
+      # Used to authenticate to PyPI via OIDC.
+      id-token: write
     steps:
     - uses: actions/checkout@v2
 
@@ -20,7 +23,4 @@ jobs:
       run: python -m build
 
     - name: publish
-      uses: pypa/gh-action-pypi-publish@master
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_TOKEN }}
+      uses: pypa/gh-action-pypi-publish@release/v1
