@@ -158,7 +158,6 @@ def find_version(input_string):
 @click.argument("input", type=click.File("rb"), default=None, required=False)
 @click.argument("output", type=click.File("wb"), default=None, required=False)
 def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
-
     config = Config()
 
     major = major or config.get("major", coercer=bool, default=False)
