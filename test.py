@@ -106,7 +106,7 @@ def test_bump_no_args_retains_local():
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(main)
+    result = runner.invoke(main, args="pyproject.toml")
     assert result.exit_code == 0
 
 
