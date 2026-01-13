@@ -117,6 +117,36 @@ def find_version(input_string):
     return match[1]
 
 
+def find_version_in_toml(filepath="pyproject.toml"):
+    """Find version in pyproject.toml [project].version field."""
+    if not os.path.exists(filepath):
+        raise NoVersionFound
+    try:
+        toml_data = toml.load(filepath)
+        version = toml_data.get("project", {}).get("version")
+        if version is None:
+            raise NoVersionFound
+        return version
+    except Exception:
+        raise NoVersionFound
+
+
+def update_version_in_toml(new_version, filepath="pyproject.toml"):
+    """Update version in pyproject.toml [project].version field."""
+    if not os.path.exists(filepath):
+        return False
+    try:
+        toml_data = toml.load(filepath)
+        if "project" not in toml_data:
+            return False
+        toml_data["project"]["version"] = new_version
+        with open(filepath, "w") as f:
+            toml.dump(toml_data, f)
+        return True
+    except Exception:
+        return False
+
+
 @click.command()
 @click.option(
     "--major",
@@ -184,6 +214,19 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
         version_string = canonicalize_version(version_string)
     new = pattern.sub(r"\g<1>{}\g<3>".format(version_string), contents)
     output.write(new.encode())
+
+    # Also bump pyproject.toml if it exists
+    if os.path.exists("pyproject.toml"):
+        try:
+            find_version_in_toml("pyproject.toml")
+            if update_version_in_toml(version_string, "pyproject.toml"):
+                click.echo("Updated pyproject.toml", err=True)
+            else:
+                click.echo("Warning: Could not update pyproject.toml", err=True)
+        except NoVersionFound:
+            # pyproject.toml exists but has no [project].version, continue normally
+            pass
+
     click.echo(version_string)
 
 

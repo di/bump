@@ -1,9 +1,18 @@
 from pathlib import Path
 
 import pytest
+import toml
 from click.testing import CliRunner
 
-from bump import Config, SemVer, find_version, main
+from bump import (
+    Config,
+    NoVersionFound,
+    SemVer,
+    find_version,
+    find_version_in_toml,
+    main,
+    update_version_in_toml,
+)
 
 
 def check_version(version, major, minor, patch, pre, local):
@@ -186,3 +195,207 @@ def test_config_ini(tmp_path, monkeypatch):
     assert config.get("nosuchkey") is None
     assert config.get("nosuchkey", default="default") == "default"
     assert config.get("nosuchbool", coercer=bool, default=True) is True
+
+
+def test_find_version_in_toml(tmp_path, monkeypatch):
+    """Test finding version in pyproject.toml [project].version field."""
+    pyproject = """
+[project]
+name = "test-package"
+version = "1.2.3"
+    """
+    file = tmp_path / "pyproject.toml"
+    file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+    version = find_version_in_toml("pyproject.toml")
+    assert version == "1.2.3"
+
+
+def test_find_version_in_toml_no_file(tmp_path, monkeypatch):
+    """Test that NoVersionFound is raised when pyproject.toml doesn't exist."""
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(NoVersionFound):
+        find_version_in_toml("pyproject.toml")
+
+
+def test_find_version_in_toml_no_project_section(tmp_path, monkeypatch):
+    """Test that NoVersionFound is raised when [project] section is missing."""
+    pyproject = """
+[build-system]
+requires = ["setuptools"]
+    """
+    file = tmp_path / "pyproject.toml"
+    file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(NoVersionFound):
+        find_version_in_toml("pyproject.toml")
+
+
+def test_find_version_in_toml_no_version(tmp_path, monkeypatch):
+    """Test that NoVersionFound is raised when version field is missing."""
+    pyproject = """
+[project]
+name = "test-package"
+    """
+    file = tmp_path / "pyproject.toml"
+    file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(NoVersionFound):
+        find_version_in_toml("pyproject.toml")
+
+
+def test_update_version_in_toml(tmp_path, monkeypatch):
+    """Test updating version in pyproject.toml."""
+    pyproject = """
+[project]
+name = "test-package"
+version = "1.2.3"
+description = "A test package"
+    """
+    file = tmp_path / "pyproject.toml"
+    file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+    result = update_version_in_toml("2.0.0", "pyproject.toml")
+    assert result is True
+
+    # Verify the version was updated
+    updated = find_version_in_toml("pyproject.toml")
+    assert updated == "2.0.0"
+
+    # Verify other fields are preserved
+    data = toml.load(file)
+    assert data["project"]["name"] == "test-package"
+    assert data["project"]["description"] == "A test package"
+
+
+def test_update_version_in_toml_no_file(tmp_path, monkeypatch):
+    """Test that update returns False when pyproject.toml doesn't exist."""
+    monkeypatch.chdir(tmp_path)
+    result = update_version_in_toml("2.0.0", "pyproject.toml")
+    assert result is False
+
+
+def test_update_version_in_toml_no_project_section(tmp_path, monkeypatch):
+    """Test that update returns False when [project] section is missing."""
+    pyproject = """
+[build-system]
+requires = ["setuptools"]
+    """
+    file = tmp_path / "pyproject.toml"
+    file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+    result = update_version_in_toml("2.0.0", "pyproject.toml")
+    assert result is False
+
+
+def test_cli_bumps_both_files(tmp_path, monkeypatch):
+    """Test that CLI bumps both setup.py and pyproject.toml when both exist."""
+    setup_py = """
+from setuptools import setup
+
+setup(
+    name='test-package',
+    version='1.0.0',
+    description='Test package',
+)
+    """
+    pyproject = """
+[project]
+name = "test-package"
+version = "1.0.0"
+description = "Test package"
+    """
+
+    setup_file = tmp_path / "setup.py"
+    setup_file.write_text(setup_py)
+
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, args=["setup.py"])
+    assert result.exit_code == 0
+    assert "1.0.1" in result.output
+
+    # Verify setup.py was updated
+    setup_contents = setup_file.read_text()
+    assert "version='1.0.1'" in setup_contents
+
+    # Verify pyproject.toml was updated
+    pyproject_data = toml.load(pyproject_file)
+    assert pyproject_data["project"]["version"] == "1.0.1"
+
+
+def test_cli_only_setup_py(tmp_path, monkeypatch):
+    """Test backward compatibility when only setup.py exists."""
+    setup_py = """
+from setuptools import setup
+
+setup(
+    name='test-package',
+    version='1.0.0',
+    description='Test package',
+)
+    """
+
+    setup_file = tmp_path / "setup.py"
+    setup_file.write_text(setup_py)
+
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, args=["setup.py"])
+    assert result.exit_code == 0
+    assert "1.0.1" in result.output
+
+    # Verify setup.py was updated
+    setup_contents = setup_file.read_text()
+    assert "version='1.0.1'" in setup_contents
+
+
+def test_cli_pyproject_toml_without_version(tmp_path, monkeypatch):
+    """Test that script continues when pyproject.toml exists but has no [project].version."""
+    setup_py = """
+from setuptools import setup
+
+setup(
+    name='test-package',
+    version='1.0.0',
+    description='Test package',
+)
+    """
+    pyproject = """
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+    """
+
+    setup_file = tmp_path / "setup.py"
+    setup_file.write_text(setup_py)
+
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, args=["setup.py"])
+    assert result.exit_code == 0
+    assert "1.0.1" in result.output
+
+    # Verify setup.py was updated
+    setup_contents = setup_file.read_text()
+    assert "version='1.0.1'" in setup_contents
+
+    # Verify pyproject.toml was NOT modified (no version to update)
+    pyproject_data = toml.load(pyproject_file)
+    assert "project" not in pyproject_data or "version" not in pyproject_data.get(
+        "project", {}
+    )
