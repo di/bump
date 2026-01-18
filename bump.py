@@ -117,6 +117,36 @@ def find_version(input_string):
     return match[1]
 
 
+def find_version_in_toml(filepath="pyproject.toml"):
+    """Find version in pyproject.toml [project].version field."""
+    if not os.path.exists(filepath):
+        raise NoVersionFound
+    try:
+        toml_data = toml.load(filepath)
+        version = toml_data.get("project", {}).get("version")
+        if version is None:
+            raise NoVersionFound
+        return version
+    except Exception:
+        raise NoVersionFound
+
+
+def update_version_in_toml(new_version, filepath="pyproject.toml"):
+    """Update version in pyproject.toml [project].version field."""
+    if not os.path.exists(filepath):
+        return False
+    try:
+        toml_data = toml.load(filepath)
+        if "project" not in toml_data:
+            return False
+        toml_data["project"]["version"] = new_version
+        with open(filepath, "w") as f:
+            toml.dump(toml_data, f)
+        return True
+    except Exception:
+        return False
+
+
 @click.command()
 @click.option(
     "--major",
@@ -164,12 +194,64 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
     minor = minor or config.get("minor", coercer=bool, default=False)
     patch = patch or config.get("patch", coercer=bool, default=False)
     reset = reset or config.get("reset", coercer=bool, default=False)
-    input = input or click.File("rb")(config.get("input", default="setup.py"))
-    output = output or click.File("wb")(input.name)
     canonicalize = canonicalize or config.get(
         "canonicalize", coercer=bool, default=False
     )
 
+    # Determine which file to use
+    using_toml_only = False
+    if input is None:
+        # No explicit input provided, detect automatically
+        config_input = config.get("input", default=None)
+        if config_input:
+            # Config specifies an input file
+            try:
+                input = click.File("rb")(config_input)
+            except Exception:
+                click.echo("Could not open file: {}".format(config_input))
+                sys.exit(1)
+        else:
+            # Auto-detect: prefer setup.py, fall back to pyproject.toml
+            if os.path.exists("setup.py"):
+                try:
+                    input = click.File("rb")("setup.py")
+                except Exception:
+                    click.echo("Could not open setup.py")
+                    sys.exit(1)
+            else:
+                # No setup.py, try pyproject.toml
+                try:
+                    find_version_in_toml("pyproject.toml")
+                    using_toml_only = True
+                except NoVersionFound:
+                    click.echo(
+                        "No version found. Neither setup.py nor pyproject.toml with [project].version found."
+                    )
+                    sys.exit(1)
+
+    # Handle pyproject.toml as primary file
+    if using_toml_only:
+        try:
+            version_string = find_version_in_toml("pyproject.toml")
+        except NoVersionFound:
+            click.echo("No version found in pyproject.toml [project].version field.")
+            sys.exit(1)
+
+        version = SemVer.parse(version_string)
+        version.bump(major, minor, patch, pre, local, reset)
+        version_string = str(version)
+        if canonicalize:
+            version_string = canonicalize_version(version_string)
+
+        if update_version_in_toml(version_string, "pyproject.toml"):
+            click.echo(version_string)
+        else:
+            click.echo("Error: Could not update pyproject.toml", err=True)
+            sys.exit(1)
+        return
+
+    # Handle setup.py (or other Python file) as primary file
+    output = output or click.File("wb")(input.name)
     contents = input.read().decode("utf-8")
     try:
         version_string = find_version(contents)
@@ -184,6 +266,19 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
         version_string = canonicalize_version(version_string)
     new = pattern.sub(r"\g<1>{}\g<3>".format(version_string), contents)
     output.write(new.encode())
+
+    # Also bump pyproject.toml if it exists
+    if os.path.exists("pyproject.toml"):
+        try:
+            find_version_in_toml("pyproject.toml")
+            if update_version_in_toml(version_string, "pyproject.toml"):
+                click.echo("Updated pyproject.toml", err=True)
+            else:
+                click.echo("Warning: Could not update pyproject.toml", err=True)
+        except NoVersionFound:
+            # pyproject.toml exists but has no [project].version, continue normally
+            pass
+
     click.echo(version_string)
 
 
