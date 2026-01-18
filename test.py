@@ -399,3 +399,132 @@ build-backend = "setuptools.build_meta"
     assert "project" not in pyproject_data or "version" not in pyproject_data.get(
         "project", {}
     )
+
+
+def test_cli_only_pyproject_toml(tmp_path, monkeypatch):
+    """Test that script works when only pyproject.toml exists (no setup.py)."""
+    pyproject = """
+[project]
+name = "test-package"
+version = "1.0.0"
+description = "Test package"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+    """
+
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, args=[])
+    assert result.exit_code == 0
+    assert "1.0.1" in result.output
+
+    # Verify pyproject.toml was updated
+    pyproject_data = toml.load(pyproject_file)
+    assert pyproject_data["project"]["version"] == "1.0.1"
+
+
+def test_cli_prioritizes_setup_py(tmp_path, monkeypatch):
+    """Test that script prioritizes setup.py when both files exist."""
+    setup_py = """
+from setuptools import setup
+
+setup(
+    name='test-package',
+    version='1.0.0',
+    description='Test package',
+)
+    """
+    pyproject = """
+[project]
+name = "test-package"
+version = "2.0.0"
+description = "Test package"
+    """
+
+    setup_file = tmp_path / "setup.py"
+    setup_file.write_text(setup_py)
+
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, args=[])
+    assert result.exit_code == 0
+    assert "1.0.1" in result.output
+
+    # Verify setup.py was updated (takes priority)
+    setup_contents = setup_file.read_text()
+    assert "version='1.0.1'" in setup_contents
+
+    # Verify pyproject.toml was also updated to match
+    pyproject_data = toml.load(pyproject_file)
+    assert pyproject_data["project"]["version"] == "1.0.1"
+
+
+def test_cli_no_version_found(tmp_path, monkeypatch):
+    """Test that script fails gracefully when neither file has a version."""
+    # Create a directory with neither setup.py nor pyproject.toml with version
+    pyproject = """
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+    """
+
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, args=[])
+    assert result.exit_code != 0
+    assert "No version found" in result.output
+
+
+def test_cli_explicit_input_still_works(tmp_path, monkeypatch):
+    """Test that explicit input file argument still works."""
+    custom_file = tmp_path / "custom.py"
+    custom_file.write_text('__version__ = "1.0.0"')
+
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, args=["custom.py"])
+    assert result.exit_code == 0
+    assert "1.0.1" in result.output
+
+    # Verify custom file was updated
+    contents = custom_file.read_text()
+    assert '__version__ = "1.0.1"' in contents
+
+
+def test_cli_pyproject_toml_only_major_bump(tmp_path, monkeypatch):
+    """Test major version bump with pyproject.toml-only project."""
+    pyproject = """
+[project]
+name = "test-package"
+version = "1.2.3"
+description = "Test package"
+    """
+
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text(pyproject)
+
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, args=["--major", "--reset"])
+    assert result.exit_code == 0
+    assert "2.0.0" in result.output
+
+    # Verify pyproject.toml was updated
+    pyproject_data = toml.load(pyproject_file)
+    assert pyproject_data["project"]["version"] == "2.0.0"
