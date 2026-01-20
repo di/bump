@@ -136,12 +136,31 @@ def update_version_in_toml(new_version, filepath="pyproject.toml"):
     if not os.path.exists(filepath):
         return False
     try:
-        toml_data = toml.load(filepath)
-        if "project" not in toml_data:
+        # Read file as text to preserve formatting
+        with open(filepath, "r", encoding="utf-8") as f:
+            contents = f.read()
+
+        # Pattern to match version line in [project] section
+        # Matches: version = "1.2.3" or version="1.2.3" or version = '1.2.3', etc.
+        # with optional whitespace
+        version_pattern = re.compile(
+            r'^(\s*version\s*=\s*["\'])(.+?)(["\']\s*)$', re.MULTILINE
+        )
+
+        # Find the version line
+        match = version_pattern.search(contents)
+        if not match:
             return False
-        toml_data["project"]["version"] = new_version
-        with open(filepath, "w") as f:
-            toml.dump(toml_data, f)
+
+        # Replace only the version value, preserving quotes and formatting
+        new_contents = version_pattern.sub(
+            r"\g<1>{}\g<3>".format(new_version), contents, count=1
+        )
+
+        # Write back the file
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(new_contents)
+
         return True
     except Exception:
         return False
