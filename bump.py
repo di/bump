@@ -123,11 +123,11 @@ def find_version_in_toml(filepath="pyproject.toml"):
         raise NoVersionFound
     try:
         toml_data = toml.load(filepath)
-        version = toml_data.get("project", {}).get("version")
+        version = toml_data["project"]["version"]
         if version is None:
             raise NoVersionFound
         return version
-    except Exception:
+    except (toml.TomlDecodeError, KeyError):
         raise NoVersionFound
 
 
@@ -162,7 +162,7 @@ def update_version_in_toml(new_version, filepath="pyproject.toml"):
             f.write(new_contents)
 
         return True
-    except Exception:
+    except IOError:
         return False
 
 
@@ -226,7 +226,7 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
             # Config specifies an input file
             try:
                 input = click.File("rb")(config_input)
-            except Exception:
+            except IOError:
                 click.echo("Could not open file: {}".format(config_input))
                 sys.exit(1)
         else:
@@ -234,7 +234,7 @@ def main(input, output, major, minor, patch, reset, pre, local, canonicalize):
             if os.path.exists("setup.py"):
                 try:
                     input = click.File("rb")("setup.py")
-                except Exception:
+                except IOError:
                     click.echo("Could not open setup.py")
                     sys.exit(1)
             else:
