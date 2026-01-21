@@ -7,7 +7,8 @@ Example
 =======
 
 By default, running ``bump`` in a directory with a ``setup.py`` will bump the
-"patch" number in place::
+"patch" number in place. If a ``pyproject.toml`` file with a ``[project].version``
+field is also present, it will be updated with the same version number::
 
   $ bump
   1.0.1
@@ -63,3 +64,26 @@ configuration file as well, so you don't have to specify them every time::
   minor = true
   patch = false
   reset = true
+
+pyproject.toml Support
+=======================
+
+``bump`` also supports ``pyproject.toml`` files following PEP 621 standards. When
+both ``setup.py`` and ``pyproject.toml`` exist in the same directory, both files
+will be updated with the same version number automatically.
+
+The tool looks for the version in the ``[project].version`` field::
+
+  [project]
+  name = "my-package"
+  version = "1.0.0"
+
+When you run ``bump``, both files will be synchronized::
+
+  $ bump
+  1.0.1
+  Updated pyproject.toml
+
+This makes ``bump`` compatible with modern Python packaging tools like ``uv``,
+``poetry``, and ``flit``, while maintaining backward compatibility with traditional
+``setup.py``-only projects.
